@@ -19,7 +19,7 @@ if sys.version_info[0] == 3 and sys.version_info[1] >= 12:
     except:
         pass
 
-# Add the src directory to the path so we can import from it
+# Add the code directory to the path so we can import modules from it
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from model_utils import load_model, preprocess_text, predict
@@ -105,6 +105,37 @@ question = st.text_area(
 if question:
     st.session_state.question = question
 
+# Using columns to control button width (60%)
+col1, col2, col3 = st.columns([2, 6, 2])  # 2:6:2 ratio gives us 60% in middle column
+
+with col2:  # Place button in middle column
+    # Process button with custom style
+    classify_clicked = st.button(
+        "Classify Question", 
+        key="classify_btn",
+        use_container_width=True,  # Fill the column (which is 60% of total width)
+        type="primary"  # Use primary button style (blue color)
+    )
+
+# Add custom CSS to make the button more prominent
+st.markdown("""
+<style>
+    div[data-testid="stButton"] button {
+        font-size: 1.2rem;
+        font-weight: bold;
+        padding: 0.8rem 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    div[data-testid="stButton"] button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+    }
+</style>
+""", unsafe_allow_html=True)
+
+
 # Sample questions
 st.markdown("### Or try one of these examples:")
 col1, col2 = st.columns(2)
@@ -120,38 +151,16 @@ sample_questions = [
     "Determine if the graph with vertices {1,2,3,4,5} and edges {(1,2), (2,3), (3,4), (4,5), (5,1)} is bipartite"
 ]
 
-if col1.button("Sample 1", key="sample1"):
-    question = sample_questions[0]
-    st.session_state.question = question
-    st.rerun() # Add this to force a re-render
-if col1.button("Sample 2", key="sample2"):
-    question = sample_questions[1]
-    st.session_state.question = question
-    st.rerun()
-if col1.button("Sample 3", key="sample3"):
-    question = sample_questions[2]
-    st.session_state.question = question
-    st.rerun()
-if col1.button("Sample 4", key="sample4"):
-    question = sample_questions[3]
-    st.session_state.question = question
-    st.rerun()
-if col2.button("Sample 5", key="sample5"):
-    question = sample_questions[4]
-    st.session_state.question = question
-    st.rerun()
-if col2.button("Sample 6", key="sample6"):
-    question = sample_questions[5]
-    st.session_state.question = question
-    st.rerun()
-if col2.button("Sample 7", key="sample7"):
-    question = sample_questions[6]
-    st.session_state.question = question
-    st.rerun()
-if col2.button("Sample 8", key="sample8"):
-    question = sample_questions[7]
-    st.session_state.question = question
-    st.rerun()
+col1, col2, col3, col4 = st.columns(4)
+
+# Define columns for each sample question (4 columns, 2 rows)
+columns = [col1, col2, col3, col4, col1, col2, col3, col4]
+
+# Use a loop to create buttons for all 8 samples
+for i in range(8):
+    if columns[i].button(f"Sample {i+1}", key=f"sample{i+1}"):
+        st.session_state.question = sample_questions[i]
+        st.rerun()
 
 # Check if we have a question from session state
 if 'question' in st.session_state:
@@ -159,9 +168,6 @@ if 'question' in st.session_state:
     # Display the question in the text area
     st.query_params["question"]=question
 
-# Process button
-# Process button - replace the entire button section with this
-classify_clicked = st.button("Classify Question", key="classify_btn")
 if classify_clicked:
     if st.session_state.question:
         with st.spinner("Processing..."):
