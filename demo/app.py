@@ -6,6 +6,7 @@ import torch
 import re
 import sys
 import os
+import time
 
 # prevent Streamlit from trying to load custom C++ classes
 # This is a workaround for an issue with Streamlit and PyTorch custom classes
@@ -172,14 +173,25 @@ if classify_clicked:
     if st.session_state.question:
         with st.spinner("Processing..."):
             try:
+                # Start timing
+                start_time = time.time()
+                
                 # Load model if not already loaded
                 model, tokenizer, flag, model_path = get_model()
                 
                 # Preprocess the question
+                preprocessing_start = time.time()
                 processed_text = preprocess_text(st.session_state.question)
+                preprocessing_time = time.time() - preprocessing_start
                 
                 # Make prediction
+                inference_start = time.time()
                 result = predict(processed_text, model, tokenizer)
+                inference_time = time.time() - inference_start
+                
+                # Calculate total processing time
+                total_time = time.time() - start_time
+                
                 print(f"Result type: {type(result)}, contains: {result}")
                 # Then unpack
                 prediction, probabilities = result
@@ -190,6 +202,13 @@ if classify_clicked:
                 # Show the predicted category
                 st.header("Results")
                 st.subheader(f"Predicted Category: {categories[prediction]}")
+                
+                # Display processing time metrics
+                st.subheader("Processing Metrics")
+                col1, col2, col3 = st.columns(3)
+                col1.metric("Total Processing Time", f"{total_time:.3f} sec")
+                col2.metric("Preprocessing Time", f"{preprocessing_time:.3f} sec")
+                col3.metric("Inference Time", f"{inference_time:.3f} sec")
                 
                 # Display probability distribution
                 st.subheader("Confidence Distribution")
