@@ -31,20 +31,23 @@ I observed that the training data has an imbalanced distribution across categori
 
 ### Data Processing and Modeling
 I implemented:
-- Baseline models in baseline.ipynb and the demo for the streamlit application
-- Transformer-based models as indicated by tokenizer files in the output directory
+- pre-trained MathBERT in baseline.ipynb
+- the demo for the streamlit application in `demo/app.py` 
+- cross-validation training in `train.py`
+- data augmentation in `augment.py`
+- 
 
 ### Demo Application
 I created an interactive demo using Streamlit:
-- app.py: Frontend for the classification demo
-- model_utils.py: Handles model loading and prediction
-- train.py: Contains cross-validation training logic
-- augment.py: Implements data augmentation techniques
+- `app.py`: Frontend for the classification demo
+- `model_utils.py`: Handles model loading and prediction
+- `train.py`: Contains cross-validation training logic
+- `augment.py`: Implements data augmentation techniques
 
 ## Results
 
 My project produces prediction outputs:
-- submission.csv: Main submission file
+- submission.csv: submission file for Kaggle competition
 
 >[!NOTE]
 > This submission is later submitted for evaluation in the Kaggle competition and got <b>0.8152</b> score in public leaderboard.
@@ -67,7 +70,7 @@ In my implementation, I used:
 2. Run the demo application:
    ```bash
    cd demo
-   streamlit run app.py --server.port=8888
+   streamlit run app.py --server.port=8888 
    ```
 
 3. To train the model:
@@ -75,5 +78,3 @@ In my implementation, I used:
    cd demo
    python train.py
    ```
-
-This report summarizes my work on the math question classification project based on the available repository information.
