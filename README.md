@@ -1,51 +1,38 @@
-# NLP_Project
-## Final Project
-The objective of the final project is to apply what you have learned in this course to a
-real world problem – a problem in your area of interest. You can apply any natural language
-processing methods and models or softwares that we cover in the course. Below is a list of
-websites that contain datasets and pretrained models that might be suitable for nlp projects.
-Websites with datasets
-### List of key concept:
-• Pretrained NLP (Transformers Based Networks)
+# Math Problem Classification Project
 
-• Recurrent Network (Any RNN model LSTM, GRU)
+## Overview
 
-• Rule Based Models (Naive Bayes, Logistic Regression,)
+This project explores various approaches to classify math problems into one of eight categories based on the dataset from the Kaggle competition: [Classification of Math Problems by Kasut Academy](https://www.kaggle.com/competitions/classification-of-math-problems-by-kasut-academy/overview). It includes data augmentation using AWS Bedrock and fine-tuning of different transformer models, including sequence classifiers, sequence-to-sequence models, and instruction-following LLMs. An ensemble approach is also considered.
 
-• Interpretability and Explainablity (LIME, SHAPP, Integrated Gradient(IG) )
+## Prerequisites
 
-• Autoencoder
-You can search papers with codes and do literature review. Also, you can find data either in
-Google data search or Kaggle competition website.
+* Python environment with standard data science libraries (pandas, numpy, etc.).
+* PyTorch.
+* Hugging Face Libraries: transformers, datasets, evaluate, trl.
+* unsloth: For efficient Llama model fine-tuning.
+* boto3: For data generation scripts using AWS Bedrock. Requires configured AWS credentials with Bedrock access.
+* Original competition data files: train.csv, test.csv.
 
-### Trending Research
-https://paperswithcode.com/
-### Dataset Search
-https://datasetsearch.research.google.com/
+## Execution Order and Script Descriptions
 
-## Deliverables
-The Group Proposal will be due 2 weeks after final project description is posted. For Group
-Final Report and Group Presentation check the syllabus.
+The recommended order for running the scripts is as follows:
 
-• Make a folder and name it Group-Proposal. Write your final group proposal in a word
-document and save it as a PDF file. Place the group proposal in the Group-Proposal
-Folder.
+1.  Data Acquisition (Manual)
+    * Download train.csv and test.csv from the Kaggle competition page linked above. Place them in the root directory or update paths within the notebooks accordingly.
 
-• Make a folder and name it Final-Group-Project-Report. Write your final group project
-report in a word document and save it as a PDF file. Move it to the Final-Group-ProjectReport folder.
+2.  Data Augmentation (Optional)
+    * Run one of the following notebooks if you wish to generate augmented data. This is required for the LLAMA_1B.ipynb notebook. Note: These require configured AWS credentials for Bedrock access.
+        * *data_generation_generic.ipynb: Generates synthetic math problems using AWS Bedrock (Claude 3.5 Sonnet) with a generic prompt. Aims to balance the class distribution by creating new samples for underrepresented categories based on examples from train.csv. Saves output to augmented_train_.csv.
+        * *data_generation_specific.ipynb: Also uses AWS Bedrock (Claude 3.5 Sonnet) to generate synthetic data based on a subset of train.csv (train.csv[:9189]). The prompt specifically requests that the generated problems mimic the use of LaTeX/math symbols found in the example problems provided, aiming for higher stylistic fidelity. Saves output to augmented_train_.csv.
+    * Note: The Llama notebook uses a file named augmented_train_cleaned.csv. You may need to rename the output of the generation scripts or perform additional cleaning steps.
 
-• Make a folder and name it Final-Group-Presentation. Create a powerpoint presentation
-for your group presentation. Save the presentation as a PDF file and move it to the
-Final-Group-Presentation folder.
+3.  Model Training and Evaluation
+    * These notebooks fine-tune different models. They can generally be run independently, provided the required data (original train.csv, and augmented data for Llama) is available. Each notebook typically includes preprocessing, training, evaluation on a validation/test split, and generation of a submission.csv file for the competition's test set.
+        * *nlp-final-project-nn-distillbert-base.ipynb*: Fine-tunes distilbert-base-uncased (an encoder-only model) for sequence classification using the original train.csv.
+        * *nlp-final-project-nn-deberta-v3.ipynb*: Fine-tunes microsoft/deberta-v3-base (an encoder-only model) for sequence classification using the original train.csv. Includes generation of submission.csv.
+        * *nlp-final-project-t5.ipynb*: Fine-tunes t5-base (an encoder-decoder model) using a sequence-to-sequence approach where the model generates the textual label name (e.g., "Algebra"). Uses the original train.csv. Includes generation of submission.csv.
+        * *LLAMA_1B.ipynb: Fine-tunes unsloth/Llama-3.2-1B (a decoder-only model) using the Unsloth library and LoRA. It treats the task as instruction-following, generating the textual label name. **Requires both train.csv and the augmented data CSV* (e.g., augmented_train_cleaned.csv). Includes evaluation on a hold-out set and generation of submission.csv.
 
-• Make a new folder and name it Code. Save all of your codes for the final project in it.
-For example, if you write code for multiple parts of the project, name them properly and
-write a README file for it. This README file should explain what order codes need to
-be run in (e.g., codes to fetch data should be run first, then code to preprocess, and then
-modeling, etc.) and a short description of what each script does.
-
-• Have one group member create a GitHub repository for the project and name it FinalProject-GroupX where X is your group number (The rest of the group members can be
-added in as collaborators and fork it, so you only need one repo for the project). Then,
-push the 4 folders that we discussed above into the repository that you created. You should
-have a markdown file (README.md) that explains the structure of the repoistory and how it
-works. Make it as clear as possible.
+4.  Ensemble Model (Conceptual)
+    * Combine the predictions from multiple trained models (e.g., DeBERTa, T5, Llama) using a hard voting strategy.
+    * Note: A specific script for ensembling is not provided. This would require custom code to load predictions or saved models from the previous steps and implement the voting logic.
