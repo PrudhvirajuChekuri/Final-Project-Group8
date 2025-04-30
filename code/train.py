@@ -22,9 +22,9 @@ from model_utils import save_model, preprocess_text
 # Constants
 MODEL_NAME = "tbs17/MathBERT"
 MAX_LENGTH = 256
-BATCH_SIZE = 16
+BATCH_SIZE = 32
 SEED = 42
-OUTPUT_DIR = "./output"
+OUTPUT_DIR = "/home/ubuntu/github_NLP/code/output/models/mathBERT"
 
 class MathDataset(Dataset):
     def __init__(self, texts, labels, tokenizer):
@@ -160,7 +160,7 @@ def train_mathbert(train_df, test_df, n_splits=3, epochs=5):
         args = TrainingArguments(
             num_train_epochs=epochs,
             output_dir=f'./fold_{fold}',
-            evaluation_strategy='epoch',
+            eval_strategy='epoch',
             save_strategy='epoch',
             save_total_limit=1,
             learning_rate=2e-5,
@@ -214,7 +214,8 @@ def train_mathbert(train_df, test_df, n_splits=3, epochs=5):
             best_f1 = current_f1
             # Since load_best_model_at_end=True, trainer.model is the best model for this fold
             # We need to ensure it's on CPU and contiguous before storing
-            best_model_state_dict = {k: v.cpu().contiguous() for k, v in trainer.model.state_dict().items()}
+            trainer.model = make_model_contiguous(trainer.model)
+            best_model_state_dict = {k: v.cpu() for k, v in trainer.model.state_dict().items()}
             # Create a new instance to store the best state_dict to avoid modifying the trainer's model directly
             if best_model is None: # Initialize best_model structure if it's the first time
                 best_model = AutoModelForSequenceClassification.from_pretrained(
@@ -224,6 +225,7 @@ def train_mathbert(train_df, test_df, n_splits=3, epochs=5):
                 )
                 best_model.resize_token_embeddings(len(tokenizer))
             best_model.load_state_dict(best_model_state_dict)
+            best_model = make_model_contiguous(best_model)
             print(f"Updated best model with F1-micro: {best_f1:.4f}") #
 
 
@@ -263,7 +265,7 @@ def main():
     print("Starting MathBERT training process...")
     
     # Load data
-    train_df, test_df = load_data("./data/train.csv", "./data/test.csv")
+    train_df, test_df = load_data("/home/ubuntu/github_NLP/code/data/train.csv", "/home/ubuntu/github_NLP/code/data/test.csv")
     
     # Train model
     best_model, tokenizer, final_preds = train_mathbert(train_df, test_df)

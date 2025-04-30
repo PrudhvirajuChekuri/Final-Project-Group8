@@ -107,8 +107,8 @@ class ModelManager:
         self.available_models = fixed_model_names # Use the provided fixed list
         self.model = None
         self.tokenizer = None
-        self.current_model_name = 'ensemble/llama_1b_model'
-        self.current_model_path = None # Path of the currently loaded model
+        self.current_model_name = 'mathBERT' # Default to MathBERT
+        self.current_model_path = '/home/ubuntu/github_NLP/code/output/models/mathBERT' # Path of the currently loaded model
         self.models_ensemble = []
         self.tokenizers_ensemble = []
 
@@ -127,8 +127,10 @@ class ModelManager:
         """Resets model-related state variables."""
         self.model = None
         self.tokenizer = None
-        self.current_model_name = 'ensemble/llama_1b_model'
+        self.current_model_name = 'mathBERT' # Reset to default
         self.current_model_path = None
+        self.models_ensemble = []
+        self.tokenizers_ensemble = []
         print("Model manager state reset.")
 
 
@@ -157,7 +159,16 @@ class ModelManager:
         print(f"Loading model and tokenizer from local directory: {load_path}...")
 
         try:
-            if model_name == 'ensemble/llama_1b_model':
+            if model_name == 'mathBERT':
+                # Load the MathBERT model and tokenizer
+                self.tokenizer = AutoTokenizer.from_pretrained('/home/ubuntu/github_NLP/code/output/models/mathBERT')
+                self.model = AutoModelForSequenceClassification.from_pretrained('/home/ubuntu/github_NLP/code/output/models/mathBERT')
+                # Move model to GPU if available
+                device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                self.model.to(device)
+                self.model.eval()
+                print(f"MathBERT model and tokenizer loaded successfully on {device}.")
+            elif model_name == 'ensemble/llama_1b_model':
                 max_seq_length = 2048
                 dtype = torch.float16
                 load_in_4bit = False
@@ -205,6 +216,7 @@ class ModelManager:
                     self.load_model(model_key)
                     self.models_ensemble.append(self.model)
                     self.tokenizers_ensemble.append(self.tokenizer)
+    
 
                 print("Successfully loaded models and their tokenizers for 'ensemble/steroids'.")
             
@@ -414,6 +426,38 @@ def deberta_predict(text, model, tokenizer):
     print("Predicted labels:", deberta_labels)
     return deberta_labels[0]
 
+def mathBERT_predict(text, model, tokenizer):
+    """
+    Make a prediction for the given text using the loaded MathBERT model.
+
+    Args:
+        text (str): Preprocessed input text
+        model: The loaded MathBERT model
+        tokenizer: The loaded tokenizer corresponding to the model
+
+    Returns:
+        int: Predicted class index
+    """
+    # Determine the device the model is on
+    device = next(model.parameters()).device
+    print(f"MathBERT model is on device: {device}")
+
+
+    inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=MAX_LENGTH)
+
+    # Move tokenized inputs to the same device as the model
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+    print(f"Input tensors moved to device: {device}")
+
+
+    with torch.no_grad():
+        outputs = model(**inputs)
+        logits = outputs.logits
+        predicted_class_index = torch.argmax(logits, dim=1).item()
+    print(f"MathBERT prediction: {predicted_class_index}")
+    return predicted_class_index
+
+
 def predict(text, model_name, model, tokenizer):
     """
     Make a prediction for the given text using the loaded sequence classification model.
@@ -434,7 +478,10 @@ def predict(text, model_name, model, tokenizer):
         raise ValueError("Model or Tokenizer is not loaded. Cannot predict.")
 
     try:
-        if model_name == 'ensemble/llama_1b_model':
+        if model_name == 'mathBERT':
+            # Use the mathBERT_predict function for MathBERT model
+            prediction = mathBERT_predict(text, model, tokenizer)
+        elif model_name == 'ensemble/llama_1b_model':
             # Use the llama_predict function for Llama model
             prediction = llama_predict(text, model, tokenizer)
         elif model_name == 'ensemble/t5-model':

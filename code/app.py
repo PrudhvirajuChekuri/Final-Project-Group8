@@ -46,7 +46,7 @@ st.set_page_config(
 
 # Define the fixed list of model names (must match subdirectory names in /output/models)
 # Ensure these directories actually exist and contain valid model/tokenizer files
-FIXED_MODEL_NAMES = ['ensemble/llama_1b_model', 'ensemble/deberta-model', 'ensemble/t5-model', 'ensemble/steroids'] 
+FIXED_MODEL_NAMES = ['mathBERT', 'ensemble/llama_1b_model', 'ensemble/deberta-model', 'ensemble/t5-model', 'ensemble/steroids'] 
 
 # Define the base directory where model subdirectories are located
 # Relative path from this app.py file to the /output/models directory
