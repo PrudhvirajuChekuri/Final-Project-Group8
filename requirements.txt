@@ -9,3 +9,8 @@ torch
 transformers
 xgboost
 unsloth
+torchvision 
+torchaudio 
+xformers
+lightgbm
+joblib

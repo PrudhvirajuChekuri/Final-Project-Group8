@@ -6,6 +6,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.metrics import classification_report, f1_score
+import joblib
 
 # Configuration
 RANDOM_STATE = 42
@@ -14,7 +15,7 @@ N_SPLITS = 3
 SUBMISSION_PATH = 'submission_nb.csv'
 
 # 1. Load data
-def load_data(train_path='data/train.csv', test_path='data/test.csv'):
+def load_data(train_path='/home/ubuntu/github_NLP/code/data/train.csv', test_path='/home/ubuntu/github_NLP/code/data/test.csv'):
     train_df = pd.read_csv(train_path)
     test_df  = pd.read_csv(test_path)
     return train_df, test_df
@@ -68,11 +69,16 @@ def main():
     y_val_pred = clf.predict(X_val)
     print("Validation Classification Report:\n")
     print(classification_report(y_val, y_val_pred, zero_division=0))
-    print(f"Macro F1 on validation: {f1_score(y_val, y_val_pred, average='macro'):.4f}")
-
+    print(f"Micro F1 on validation: {f1_score(y_val, y_val_pred, average='micro'):.4f}")
     # Retrain on full training data
     clf_full = MultinomialNB()
     clf_full.fit(X_train, y)
+
+    # Save the trained model and vectorizer
+    model_dir = '/home/ubuntu/github_NLP/code/output/models/naive-bayes'
+    os.makedirs(model_dir, exist_ok=True)
+    joblib.dump(clf_full, os.path.join(model_dir, 'naive_bayes_model.joblib'))
+    joblib.dump(vect, os.path.join(model_dir, 'tfidf_vectorizer.joblib'))
 
     # Predict on test set
     test_preds = clf_full.predict(X_test)

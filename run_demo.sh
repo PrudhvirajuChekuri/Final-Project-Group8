@@ -21,8 +21,6 @@ if [ ! -d "venv" ]; then
     echo "Cleaning up previous installations..."
     uv pip install pip3-autoremove
     pip-autoremove torch torchvision torchaudio -y
-    uv pip install torch torchvision torchaudio xformers --index-url https://download.pytorch.org/whl/cu121
-    uv pip install unsloth
     # Install requirements
     echo "Installing requirements..."
     uv pip install -r requirements.txt -q

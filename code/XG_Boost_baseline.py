@@ -7,14 +7,17 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, f1_score
 import numpy as np
 import xgboost as xgb
+import joblib
 
 # Configuration
 RANDOM_STATE = 42
 TEST_SIZE = 0.2
 SUBMISSION_PATH = 'submission_xgb.csv'
+MODEL_DIR = '/home/ubuntu/github_NLP/code/output/models/xgboost'
+MODEL_PATH = os.path.join(MODEL_DIR, 'xgb_model.pkl')
 
 # 1. Load data
-def load_data(train_path='data/train.csv', test_path='data/test.csv'):
+def load_data(train_path='/home/ubuntu/github_NLP/code/data/train.csv', test_path='/home/ubuntu/github_NLP/code/data/test.csv'):
     train_df = pd.read_csv(train_path)
     test_df  = pd.read_csv(test_path)
     return train_df, test_df
@@ -68,7 +71,8 @@ def main():
         learning_rate=0.1,
         subsample=0.8,
         colsample_bytree=0.8,
-        random_state=RANDOM_STATE
+        random_state=RANDOM_STATE,
+        tree_method='gpu_hist'  # Use GPU if available
     )
     clf.fit(X_tr, y_tr)
 
@@ -83,15 +87,20 @@ def main():
         objective='multi:softmax',
         num_class=len(np.unique(y)),
         eval_metric='mlogloss',
-        use_label_encoder=False,
         n_estimators=100,
         max_depth=6,
         learning_rate=0.1,
         subsample=0.8,
         colsample_bytree=0.8,
-        random_state=RANDOM_STATE
+        random_state=RANDOM_STATE,
+        tree_method='gpu_hist'  # Use GPU if available
     )
     clf_full.fit(X_train, y)
+
+    # Save the trained model
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    joblib.dump(clf_full, MODEL_PATH)
+    print(f"Trained model saved to {MODEL_PATH}")
 
     # Predict on test set
     test_preds = clf_full.predict(X_test)
