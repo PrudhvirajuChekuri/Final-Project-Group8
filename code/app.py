@@ -108,26 +108,29 @@ with st.sidebar:
     This application uses transformer models to classify mathematical questions into 8 categories.
     Select a model from the dropdown in the main panel. Ensure the corresponding model files exist locally.
     """)
-    
+
     st.header("Model Information")
     # Display info about the currently loaded model
-    if model and tokenizer and current_model_name:
+    if model_manager.current_model_name == 'ensemble/steroids' and model_manager.is_ensemble_ready():
+        # Special case for ensemble
+        st.success(f"✅ Ensemble Model Loaded: **{model_manager.current_model_name}**")
+        st.caption(f"Path: `{model_path}`") 
+        st.write(f"Components: {len(model_manager.models_ensemble)}")
+    elif model and tokenizer and current_model_name:
+        # Standard model loaded
         st.success(f"✅ Model Loaded: **{current_model_name}**")
-        # Show the path from where the model was loaded
         st.caption(f"Path: `{model_path}`")
-        # Display model type and architecture if available in config
         st.write("Model type:", type(model).__name__)
         if hasattr(model.config, 'architectures') and model.config.architectures:
-            st.write("Architecture:", model.config.architectures[0])
+             st.write("Architecture:", ", ".join(model.config.architectures)) # Fixed indentation
         else:
-             st.write("Architecture: Not specified in config")
-        # Show the device the model is loaded on
+             st.write("Architecture: Not specified in config") # Fixed indentation
         try:
-            device = next(model.parameters()).device
-            st.write("Device:", device)
+             device = next(model.parameters()).device # Fixed indentation
+             st.write(f"Device: {device}") # Fixed indentation
         except Exception:
-             st.write("Device: Could not determine")
-    elif model_manager.current_model_name: # If a name is set but model object is None (load failed)
+             st.write("Device: Could not determine") # Fixed indentation
+    elif model_manager.current_model_name: # If a name is set but model object is None (load failed OR ensemble attempted but failed)
          st.warning(f"⚠️ Attempted to load: **{model_manager.current_model_name}** but failed. Check logs and model files. Please select another model.")
     else: # If no model has been successfully loaded yet
         st.warning("⚠️ No model is currently loaded. Please select one from the dropdown.")
@@ -136,7 +139,6 @@ with st.sidebar:
     # Display the defined categories
     for cat_id, cat_name in CATEGORIES.items():
         st.write(f"**{cat_id}**: {cat_name}")
-
 
 
 # --- Main Page Content ---
@@ -182,16 +184,20 @@ if question_input != st.session_state.question:
 col1_btn, col2_btn, col3_btn = st.columns([2, 6, 2]) # Adjust ratio as needed for centering
 
 with col2_btn: # Place button in the middle column
+    # Update the disabled condition to check for ensemble readiness
+    is_model_loaded = (model is not None and tokenizer is not None) or \
+                      (model_manager.current_model_name == 'ensemble/steroids' and model_manager.is_ensemble_ready())
+    
     classify_clicked = st.button(
         "Classify Question",
         key="classify_btn",
         use_container_width=True, # Make button fill the column width
         type="primary", # Use Streamlit's primary button styling
-        # Disable the button if no model/tokenizer is currently loaded
-        disabled=(model is None or tokenizer is None)
+        # Updated condition for disabling the button
+        disabled=not is_model_loaded
     )
     # Provide feedback if the button is disabled
-    if model is None or tokenizer is None:
+    if not is_model_loaded:
         st.warning("Please select a valid model from the dropdown before classifying.")
 
 # --- Button Styling (Keep as is for visual appeal) ---
@@ -248,8 +254,13 @@ for i in range(num_samples):
 
 # --- Prediction Logic ---
 # This block executes only if the 'Classify Question' button was clicked
-# and if a model and tokenizer are successfully loaded
-if classify_clicked and (model is not None and tokenizer is not None):
+# and if a model or ensemble is successfully loaded
+# Use model_manager.is_ready() or similar check if you add one
+is_ready_to_predict = (model_manager.current_model_name is not None) and \
+                      ((model is not None and tokenizer is not None) or \
+                       (model_manager.current_model_name == 'ensemble/steroids' and model_manager.is_ensemble_ready()))
+
+if classify_clicked and is_ready_to_predict:
     # Get the current question from session state (updated by text area or sample buttons)
     current_question = st.session_state.get("question", "").strip()
 

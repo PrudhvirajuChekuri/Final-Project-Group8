@@ -132,6 +132,12 @@ class ModelManager:
         self.models_ensemble = []
         self.tokenizers_ensemble = []
         print("Model manager state reset.")
+        
+    def is_ensemble_ready(self):
+        """Check if the ensemble model components are properly loaded."""
+        if self.current_model_name == 'ensemble/steroids':
+            return len(self.models_ensemble) == 3 and len(self.tokenizers_ensemble) == 3
+        return False
 
 
     def load_model(self, model_name):
@@ -142,11 +148,16 @@ class ModelManager:
         if model_name not in self.available_models:
              raise ValueError(f"Model '{model_name}' is not in the predefined list of available models: {self.available_models}")
 
-        if model_name == self.current_model_name and self.model is not None and self.tokenizer is not None:
-            print(f"Model '{model_name}' is already loaded.")
-            return
+        # Special handling for ensemble: load components without full reset if target is ensemble
+        is_loading_ensemble = model_name == 'ensemble/steroids'
 
-        self.unload_model() # Unload previous model first
+        if not is_loading_ensemble:
+            # Standard loading: unload previous model if different
+            if model_name == self.current_model_name and self.model is not None and self.tokenizer is not None:
+                print(f"Model '{model_name}' is already loaded.")
+                return
+            self.unload_model() # Unload previous model first
+
         print(f"Attempting to load model: {model_name}")
 
         load_path = os.path.join(DEFAULT_MODEL_BASE_DIR, model_name)
@@ -161,69 +172,145 @@ class ModelManager:
         try:
             if model_name == 'mathBERT':
                 # Load the MathBERT model and tokenizer
-                self.tokenizer = AutoTokenizer.from_pretrained('/home/ubuntu/github_NLP/code/output/models/mathBERT')
-                self.model = AutoModelForSequenceClassification.from_pretrained('/home/ubuntu/github_NLP/code/output/models/mathBERT')
+                tokenizer = AutoTokenizer.from_pretrained('/home/ubuntu/github_NLP/code/output/models/mathBERT')
+                model = AutoModelForSequenceClassification.from_pretrained('/home/ubuntu/github_NLP/code/output/models/mathBERT')
                 # Move model to GPU if available
                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-                self.model.to(device)
-                self.model.eval()
+                model.to(device)
+                model.eval()
                 print(f"MathBERT model and tokenizer loaded successfully on {device}.")
+                # Update state only if not loading as part of ensemble
+                if not is_loading_ensemble:
+                    self.model = model
+                    self.tokenizer = tokenizer
+                    self.current_model_name = model_name
+                    self.current_model_path = load_path
+
             elif model_name == 'ensemble/llama_1b_model':
                 max_seq_length = 2048
                 dtype = torch.float16
                 load_in_4bit = False
 
-                self.model, self.tokenizer = FastLanguageModel.from_pretrained(
+                model, tokenizer = FastLanguageModel.from_pretrained(
                     model_name = "/home/ubuntu/github_NLP/code/output/models/ensemble/llama_1b_model",
                     max_seq_length = max_seq_length,
                     dtype = dtype,
                     load_in_4bit = load_in_4bit
                 )
-                # Update the current model state
-                self.current_model_name = model_name
-                self.current_model_path = load_path
                 print(f"Successfully loaded Llama model '{model_name}'") # Add success message
+                # Update state only if not loading as part of ensemble
+                if not is_loading_ensemble:
+                    self.model = model
+                    self.tokenizer = tokenizer
+                    self.current_model_name = model_name
+                    self.current_model_path = load_path
+
 
             elif model_name == 'ensemble/t5-model':
                 t5_model_dir = '/home/ubuntu/github_NLP/code/output/models/ensemble/t5-model'
                 print(f"\nLoading fine-tuned T5 model and tokenizer from {t5_model_dir}...")
-                self.tokenizer = AutoTokenizer.from_pretrained(t5_model_dir)
+                tokenizer = AutoTokenizer.from_pretrained(t5_model_dir)
 
                 device = 0
-                self.model = AutoModelForSeq2SeqLM.from_pretrained(t5_model_dir).to(f"cuda:{device}")
-                self.model.eval()
+                model = AutoModelForSeq2SeqLM.from_pretrained(t5_model_dir).to(f"cuda:{device}")
+                model.eval()
 
-                print("Model and tokenizer reloaded successfully.")
+                print("T5 Model and tokenizer reloaded successfully.")
+                # Update state only if not loading as part of ensemble
+                if not is_loading_ensemble:
+                    self.model = model
+                    self.tokenizer = tokenizer
+                    self.current_model_name = model_name
+                    self.current_model_path = load_path
                 
             elif model_name == 'ensemble/deberta-model':
                 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
                 print(f"Using device: {device} to load deberta model")
                 deberta_model_dir = '/home/ubuntu/github_NLP/code/output/models/ensemble/deberta-model'
-                self.tokenizer = AutoTokenizer.from_pretrained(deberta_model_dir)
-                print("Tokenizer loaded.")
+                tokenizer = AutoTokenizer.from_pretrained(deberta_model_dir)
+                print("Deberta Tokenizer loaded.")
 
-                self.model = AutoModelForSequenceClassification.from_pretrained(deberta_model_dir)
-                print("Model loaded.")
-                self.model.to(device)
-                print(f"Model moved to {device}.")
+                model = AutoModelForSequenceClassification.from_pretrained(deberta_model_dir)
+                print("Deberta Model loaded.")
+                model.to(device)
+                print(f"Deberta Model moved to {device}.")
 
-                self.model.eval()
+                model.eval()
+                # Update state only if not loading as part of ensemble
+                if not is_loading_ensemble:
+                    self.model = model
+                    self.tokenizer = tokenizer
+                    self.current_model_name = model_name
+                    self.current_model_path = load_path
+
             elif model_name == 'ensemble/steroids':
+                # Ensure previous non-ensemble model is unloaded
+                self.unload_model()
+                print("Loading ensemble components for 'ensemble/steroids'...")
                 models_list = ['ensemble/llama_1b_model', 'ensemble/deberta-model', 'ensemble/t5-model']
-                tokenizers_ensemble = []
-                models_ensemble = []
-                for model_key in models_list:
-                    self.load_model(model_key)
-                    self.models_ensemble.append(self.model)
-                    self.tokenizers_ensemble.append(self.tokenizer)
-    
+                # Clear existing ensemble lists before loading new components
+                self.models_ensemble = []
+                self.tokenizers_ensemble = []
+                component_load_success = True
 
-                print("Successfully loaded models and their tokenizers for 'ensemble/steroids'.")
-            
-                
+                for model_key in models_list:
+                    print(f"\n--- Loading component: {model_key} ---")
+                    try:
+                        # Load component model and tokenizer directly without recursive call
+                        if model_key == 'ensemble/llama_1b_model':
+                            max_seq_length = 2048
+                            dtype = torch.float16
+                            load_in_4bit = False
+                            comp_model, comp_tokenizer = FastLanguageModel.from_pretrained(
+                                model_name = "/home/ubuntu/github_NLP/code/output/models/ensemble/llama_1b_model",
+                                max_seq_length = max_seq_length, dtype = dtype, load_in_4bit = load_in_4bit
+                            )
+                        elif model_key == 'ensemble/deberta-model':
+                            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+                            deberta_model_dir = '/home/ubuntu/github_NLP/code/output/models/ensemble/deberta-model'
+                            comp_tokenizer = AutoTokenizer.from_pretrained(deberta_model_dir)
+                            comp_model = AutoModelForSequenceClassification.from_pretrained(deberta_model_dir)
+                            comp_model.to(device)
+                            comp_model.eval()
+                        elif model_key == 'ensemble/t5-model':
+                            t5_model_dir = '/home/ubuntu/github_NLP/code/output/models/ensemble/t5-model'
+                            comp_tokenizer = AutoTokenizer.from_pretrained(t5_model_dir)
+                            device = 0
+                            comp_model = AutoModelForSeq2SeqLM.from_pretrained(t5_model_dir).to(f"cuda:{device}")
+                            comp_model.eval()
+                        else:
+                            print(f"Warning: Unknown component model key '{model_key}' in ensemble list.")
+                            continue # Skip unknown components
+
+                        # Append successfully loaded component
+                        self.models_ensemble.append(comp_model)
+                        self.tokenizers_ensemble.append(comp_tokenizer)
+                        print(f"--- Successfully loaded and added component: {model_key} ---")
+
+                    except Exception as comp_e:
+                        print(f"ERROR loading component '{model_key}': {comp_e}")
+                        component_load_success = False
+                        # Decide if you want to break or continue loading other components
+                        break # Stop loading ensemble if one component fails
+
+                if component_load_success and len(self.models_ensemble) == len(models_list):
+                    print("\nSuccessfully loaded all models and tokenizers for 'ensemble/steroids'.")
+                    # Set the main model/tokenizer to None as we use the lists for ensemble
+                    self.model = None
+                    self.tokenizer = None
+                    self.current_model_name = model_name
+                    self.current_model_path = "Ensemble Model" # Or specific path if applicable
+                else:
+                    print("\nFailed to load all components for 'ensemble/steroids'. Resetting state.")
+                    self.unload_model() # Clean up potentially partially loaded ensemble
+                    raise Exception("Failed to load one or more ensemble components.")
+
+
         except Exception as e:
             print(f"Error loading model '{model_name}' from {load_path}: {str(e)}")
-            self._reset_state() # Ensure clean state on failure
+            # Reset state only if not loading ensemble (ensemble handles its own reset on failure)
+            if not is_loading_ensemble:
+                self._reset_state() # Ensure clean state on failure
             # Re-raise the exception to signal the failure upstream
             raise Exception(f"Failed to load model '{model_name}': {str(e)}")
 
@@ -233,8 +320,6 @@ class ModelManager:
         if self.model is not None or self.tokenizer is not None:
             print(f"Unloading model: {self.current_model_name}")
             del self.model
-            del self.models_ensemble
-            del self.tokenizers_ensemble
             del self.tokenizer
             self.model = None
             self.tokenizer = None
