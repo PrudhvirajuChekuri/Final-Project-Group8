@@ -10,6 +10,7 @@ from sklearn.pipeline import Pipeline
 from lightgbm import LGBMClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer, TfidfTransformer
+import time
 
 
 #%%
@@ -45,6 +46,7 @@ y = train["label"]
 # # Split data
 
 # %%
+start_time = time.time()
 X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=0.1, random_state=42)
 X_train.shape, X_test.shape, y_train.shape, y_test.shape
 
@@ -86,6 +88,9 @@ submission_df = pd.DataFrame({
     'id': test['id'],
     'label': predicted_labels
 })
+
+
+print(f"Total time taken: {time.time() - start_time:.2f} seconds")
 
 
 submission_filename = 'submission_lgbm.csv'
