@@ -1,0 +1,16 @@
+gdown
+numpy
+pandas
+scikit_learn
+scipy
+streamlit
+textattack
+torch
+transformers
+xgboost
+unsloth
+torchvision 
+torchaudio 
+xformers
+lightgbm
+joblib
