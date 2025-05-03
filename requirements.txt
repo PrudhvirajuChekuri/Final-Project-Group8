@@ -14,3 +14,4 @@ torchaudio
 xformers
 lightgbm
 joblib
+evaluate
