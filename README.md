@@ -22,12 +22,12 @@ The recommended order for running the scripts is as follows:
 >[!NOTE]
 >  the below command is crucial for downloading the dataset and models. Make sure to run it before proceeding with any other scripts.
 
-    * Run the `get_assets.sh` script to download the necessary dataset files from Google Drive.
-    * This script will create a directory named `./code/data/` and download the following files:
+* Run the `get_assets.sh` script to download the necessary dataset files from Google Drive.
+* This script will create a directory named `./code/data/` and download the following files:
         * train.csv
         * test.csv
-    * This script will also create a directory named `./code/output/models/` and download the model files into it.
-    * To run the script, use the command:
+* This script will also create a directory named `./code/output/models/` and download the model files into it.
+* To run the script, use the command:
         ```bash
         chmod +x get_assets.sh
         <!-- NOTE: ./get_assets.sh <MODEL_DRIVE_ID> <DATA_DRIVE_ID> -->
