@@ -28,11 +28,11 @@ The recommended order for running the scripts is as follows:
         * test.csv
 * This script will also create a directory named `./code/output/models/` and download the model files into it.
 * To run the script, use the command:
-        ```bash
+  ```bash
         chmod +x get_assets.sh
-        <!-- NOTE: ./get_assets.sh <MODEL_DRIVE_ID> <DATA_DRIVE_ID> -->
         ./get_assets.sh 1ancje2FsGw9dTMMCXCO2CfuXsqgDJKBE 1OpVGWl8JlRD3G3mB8IqoAE6DY1bd08sv
-        ```
+  ```
+  _NOTE: ./get_assets.sh <MODEL_DRIVE_ID> <DATA_DRIVE_ID>_
 2. Run Demo (Shell Script)
     * The demo application is implemented using Streamlit and can be run using the command:
         ```bash
