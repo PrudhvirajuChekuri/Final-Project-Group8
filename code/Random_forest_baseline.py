@@ -8,6 +8,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import classification_report, f1_score
 from sklearn.utils.class_weight import compute_class_weight
 import numpy as np
+import time
 
 # Configuration
 RANDOM_STATE = 42
@@ -15,7 +16,7 @@ TEST_SIZE = 0.2
 SUBMISSION_PATH = 'submission_rf.csv'
 
 # 1. Load data
-def load_data(train_path='data/train.csv', test_path='data/test.csv'):
+def load_data(train_path='/home/ubuntu/github_NLP/code/data/train.csv', test_path='/home/ubuntu/github_NLP/code/data/test.csv'):
     train_df = pd.read_csv(train_path)
     test_df  = pd.read_csv(test_path)
     return train_df, test_df
@@ -41,6 +42,7 @@ def prepare_features(train_texts, test_texts, max_features=7000):
 
 # 4. Main pipeline
 def main():
+    start_time = time.time()
     train_df, test_df = load_data()
 
     # Preprocess text
@@ -65,7 +67,7 @@ def main():
     y_val_pred = clf.predict(X_val)
     print("Validation Classification Report:\n")
     print(classification_report(y_val, y_val_pred, zero_division=0))
-    print(f"Macro F1 on validation: {f1_score(y_val, y_val_pred, average='macro'):.4f}")
+    print(f"Micro F1 on validation: {f1_score(y_val, y_val_pred, average='micro'):.4f}")
 
     # Retrain on full data
     clf_full = RandomForestClassifier(n_estimators=100, class_weight='balanced', random_state=RANDOM_STATE, n_jobs=-1)
@@ -81,7 +83,7 @@ def main():
     })
     submission.to_csv(SUBMISSION_PATH, index=False)
     print(f"Submission saved to {SUBMISSION_PATH}")
-
+    print(f"Total time taken: {time.time() - start_time:.2f} seconds")
 if __name__ == '__main__':
     main()
 

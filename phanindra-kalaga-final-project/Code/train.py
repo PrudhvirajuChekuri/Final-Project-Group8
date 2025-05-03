@@ -24,7 +24,7 @@ MODEL_NAME = "tbs17/MathBERT"
 MAX_LENGTH = 256
 BATCH_SIZE = 16
 SEED = 42
-OUTPUT_DIR = "../code/output"
+OUTPUT_DIR = "./output"
 
 class MathDataset(Dataset):
     def __init__(self, texts, labels, tokenizer):
@@ -263,7 +263,7 @@ def main():
     print("Starting MathBERT training process...")
     
     # Load data
-    train_df, test_df = load_data("../code/data/train.csv", "../code/data/test.csv")
+    train_df, test_df = load_data("./data/train.csv", "./data/test.csv")
     
     # Train model
     best_model, tokenizer, final_preds = train_mathbert(train_df, test_df)

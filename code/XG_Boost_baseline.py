@@ -7,14 +7,18 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, f1_score
 import numpy as np
 import xgboost as xgb
+import joblib
+import time
 
 # Configuration
 RANDOM_STATE = 42
 TEST_SIZE = 0.2
 SUBMISSION_PATH = 'submission_xgb.csv'
+MODEL_DIR = '/home/ubuntu/github_NLP/code/output/models/xgboost'
+MODEL_PATH = os.path.join(MODEL_DIR, 'xgb_model.pkl')
 
 # 1. Load data
-def load_data(train_path='data/train.csv', test_path='data/test.csv'):
+def load_data(train_path='/home/ubuntu/github_NLP/code/data/train.csv', test_path='/home/ubuntu/github_NLP/code/data/test.csv'):
     train_df = pd.read_csv(train_path)
     test_df  = pd.read_csv(test_path)
     return train_df, test_df
@@ -41,6 +45,7 @@ def prepare_features(train_texts, test_texts, max_features=10000):
 
 # 4. Main pipeline
 def main():
+    start_time = time.time()
     train_df, test_df = load_data()
 
     # Preprocess text
@@ -68,7 +73,8 @@ def main():
         learning_rate=0.1,
         subsample=0.8,
         colsample_bytree=0.8,
-        random_state=RANDOM_STATE
+        random_state=RANDOM_STATE,
+        tree_method='gpu_hist'  # Use GPU if available
     )
     clf.fit(X_tr, y_tr)
 
@@ -76,22 +82,27 @@ def main():
     y_val_pred = clf.predict(X_val)
     print("Validation Classification Report:\n")
     print(classification_report(y_val, y_val_pred, zero_division=0))
-    print(f"Macro F1 on validation: {f1_score(y_val, y_val_pred, average='macro'):.4f}")
+    print(f"micro F1 on validation: {f1_score(y_val, y_val_pred, average='micro'):.4f}")
 
     # Retrain on full data
     clf_full = xgb.XGBClassifier(
         objective='multi:softmax',
         num_class=len(np.unique(y)),
         eval_metric='mlogloss',
-        use_label_encoder=False,
         n_estimators=100,
         max_depth=6,
         learning_rate=0.1,
         subsample=0.8,
         colsample_bytree=0.8,
-        random_state=RANDOM_STATE
+        random_state=RANDOM_STATE,
+        tree_method='gpu_hist'  # Use GPU if available
     )
     clf_full.fit(X_train, y)
+
+    # Save the trained model
+    os.makedirs(MODEL_DIR, exist_ok=True)
+    joblib.dump(clf_full, MODEL_PATH)
+    print(f"Trained model saved to {MODEL_PATH}")
 
     # Predict on test set
     test_preds = clf_full.predict(X_test)
@@ -103,6 +114,7 @@ def main():
     })
     submission.to_csv(SUBMISSION_PATH, index=False)
     print(f"Submission saved to {SUBMISSION_PATH}")
+    print(f"Total time taken: {time.time() - start_time:.2f} seconds")
 
 if __name__ == '__main__':
     main()

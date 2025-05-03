@@ -49,13 +49,23 @@ def load_model():
         # Load the model from the saved path if available
         if os.path.exists(model_dir):
             print(f"Loading fine-tuned model from {model_dir}...")
-            model = AutoModelForSequenceClassification.from_pretrained(
-                model_dir,
-                num_labels=8
-            )
-            model_path = model_dir
-            print("Model loaded successfully!")
-            flag = True
+            try:
+                model = AutoModelForSequenceClassification.from_pretrained(
+                    model_dir,
+                    num_labels=8
+                )
+                model_path = model_dir
+                print("Model loaded successfully!")
+                flag = True
+            except Exception as err:
+                print(f"Failed loading fine-tuned model ({err}); falling back to base model.")
+                model = AutoModelForSequenceClassification.from_pretrained(
+                    MODEL_NAME,
+                    num_labels=8,
+                    ignore_mismatched_sizes=True
+                )
+                model_path = MODEL_NAME
+                model.resize_token_embeddings(len(tokenizer))
         else:
             # Fall back to the base model if the fine-tuned model is not available
             print(f"Fine-tuned model not found at {model_dir}! \n\nLoading base MathBERT model instead...")
