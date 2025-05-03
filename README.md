@@ -33,6 +33,10 @@ The recommended order for running the scripts is as follows:
         ./get_assets.sh 1ancje2FsGw9dTMMCXCO2CfuXsqgDJKBE 1OpVGWl8JlRD3G3mB8IqoAE6DY1bd08sv
   ```
   _NOTE: ./get_assets.sh <MODEL_DRIVE_ID> <DATA_DRIVE_ID>_
+
+>[!WARNING]
+> If you encounter the `Failed to retrieve file url` error, it may be due to the file being accessed too frequently. In that case, currently the only solution is to wait for a while and try again. Alternatively, you can download the files manually from Google Drive and place them in the appropriate directories.
+
 2. Run Demo (Shell Script)
     * The demo application is implemented using Streamlit and can be run using the command:
         ```bash

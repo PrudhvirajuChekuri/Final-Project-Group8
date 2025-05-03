@@ -8,11 +8,29 @@ set -euo pipefail
 # Usage: ./get_assets.sh 1ancje2FsGw9dTMMCXCO2CfuXsqgDJKBE 1OpVGWl8JlRD3G3mB8IqoAE6DY1bd08sv
 ###############################################################################
 
-python3 -m venv venv
+if [ ! -d "venv" ]; then
+    python3 -m venv venv
     echo "Virtual environment 'venv' created."
     # Activate venv
     source venv/bin/activate
     echo "Virtual environment 'venv' activated."
+    # Upgrade pip
+    pip install --upgrade pip
+    echo "Pip upgraded."
+    # install uv
+    echo "Installing uv... (for faster package installation)"
+    pip install uv -q
+    echo "uv installed"
+    # Clean up previous installations
+    echo "Cleaning up previous installations..."
+    uv pip install pip3-autoremove
+    pip-autoremove torch torchvision torchaudio -y
+    # Install requirements
+    echo "Installing requirements..."
+    uv pip install -r requirements.txt -q
+    echo "Requirements installed."
+
+fi
 
 if [[ $# -ne 2 ]]; then
   echo "Usage: $0 <MODELS_FOLDER_ID> <DATA_FOLDER_ID>" >&2

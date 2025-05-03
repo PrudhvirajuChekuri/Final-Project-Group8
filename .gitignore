@@ -76,7 +76,6 @@ venv.bak/
 *.iml
 
 # Project specific
-data/
 models/
 *.log
 .DS_Store
@@ -159,7 +158,6 @@ venv.bak/
 *.iml
 
 # Project specific
-data/
 models/
 *.log
 .DS_Store
